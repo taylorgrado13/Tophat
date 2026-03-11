@@ -50,6 +50,7 @@ position: relative;
 width: 204px;
 height: 204px;
 flex-shrink: 0;
+overflow: visible;
 }
 
 /* ── HAT ── */
@@ -508,11 +509,16 @@ rafId = requestAnimationFrame(frame);
 
 try {
 const r = await fetch(BIN_URL + ‘/latest’, {
-headers: { ‘X-Master-Key’: API_KEY }
+headers: {
+‘X-Master-Key’: API_KEY,
+‘X-Access-Key’: API_KEY,
+‘X-Bin-Meta’: ‘false’
+}
 });
 const j = await r.json();
-if (j.record && Array.isArray(j.record.thoughts) && j.record.thoughts.length) {
-thoughts = j.record.thoughts;
+const record = j.thoughts ? j : (j.record || null);
+if (record && Array.isArray(record.thoughts) && record.thoughts.length) {
+thoughts = record.thoughts;
 setThought(0);
 }
 } catch(e) {}
@@ -539,15 +545,16 @@ editDraft = […thoughts];
 document.getElementById(‘editPanel’).classList.add(‘open’);
 document.getElementById(‘editToggle’).textContent = ‘✦ close editor’;
 renderEditList();
-// 💡 pop the lightbulb!
+try {
 const bulb = document.getElementById(‘lightbulb’);
 bulb.classList.remove(‘pop’, ‘glow’);
-void bulb.offsetWidth; // force reflow to restart animation
+void bulb.offsetWidth;
 bulb.classList.add(‘pop’);
 bulb.addEventListener(‘animationend’, () => {
 bulb.classList.remove(‘pop’);
 bulb.classList.add(‘glow’);
 }, { once: true });
+} catch(e) {}
 }
 
 function cancelEdit() {

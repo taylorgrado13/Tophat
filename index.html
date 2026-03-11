@@ -500,28 +500,24 @@ const API_KEY = ‘$2a$10$YJRS5A0ezItimuE0YbEK/.Ca1UUhStRrJax.4zYQos3pmVKjwkPWG�
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 async function loadThoughts() {
-thoughts = […DEFAULTS]; // show defaults instantly while fetching
+try {
+const r = await fetch(BIN_URL + ‘/latest’, {
+headers: { ‘X-Master-Key’: API_KEY }
+});
+const j = await r.json();
+if (j.record && Array.isArray(j.record.thoughts) && j.record.thoughts.length) {
+thoughts = j.record.thoughts;
+} else {
+thoughts = […DEFAULTS];
+}
+} catch(e) {
+thoughts = […DEFAULTS];
+}
 setThought(0);
 lastSwap = 0;
 if (rafId) cancelAnimationFrame(rafId);
 lastTs = null;
 rafId = requestAnimationFrame(frame);
-
-try {
-const r = await fetch(BIN_URL + ‘/latest’, {
-headers: {
-‘X-Master-Key’: API_KEY,
-‘X-Access-Key’: API_KEY,
-‘X-Bin-Meta’: ‘false’
-}
-});
-const j = await r.json();
-const record = j.thoughts ? j : (j.record || null);
-if (record && Array.isArray(record.thoughts) && record.thoughts.length) {
-thoughts = record.thoughts;
-setThought(0);
-}
-} catch(e) {}
 }
 
 async function saveLocal(list) {

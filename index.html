@@ -492,28 +492,40 @@ document.getElementById(‘cloudText’).textContent = thoughts[thoughtIdx];
 }
 
 // ═══════════════════════════════════════
-// STORAGE
-// Always starts from DEFAULTS so Notion embeds (which block localStorage)
-// never show a blank widget. localStorage is a bonus if available.
+// STORAGE — JSONbin
 // ═══════════════════════════════════════
-function loadThoughts() {
-thoughts = […DEFAULTS];
-try {
-const raw = localStorage.getItem(STORAGE_KEY);
-if (raw) {
-const parsed = JSON.parse(raw);
-if (Array.isArray(parsed) && parsed.length) thoughts = parsed;
-}
-} catch(_) {}
+const BIN_ID  = ‘69b0e1821687bc351c7c470d’;
+const API_KEY = ‘$2a$10$YJRS5A0ezItimuE0YbEK/.Ca1UUhStRrJax.4zYQos3pmVKjwkPWG’;
+const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+async function loadThoughts() {
+thoughts = […DEFAULTS]; // show defaults instantly while fetching
 setThought(0);
 lastSwap = 0;
 if (rafId) cancelAnimationFrame(rafId);
 lastTs = null;
 rafId = requestAnimationFrame(frame);
+
+try {
+const r = await fetch(BIN_URL + ‘/latest’, {
+headers: { ‘X-Master-Key’: API_KEY }
+});
+const j = await r.json();
+if (j.record && Array.isArray(j.record.thoughts) && j.record.thoughts.length) {
+thoughts = j.record.thoughts;
+setThought(0);
+}
+} catch(e) {}
 }
 
-function saveLocal(list) {
-try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(_) {}
+async function saveLocal(list) {
+try {
+await fetch(BIN_URL, {
+method: ‘PUT’,
+headers: { ‘Content-Type’: ‘application/json’, ‘X-Master-Key’: API_KEY },
+body: JSON.stringify({ thoughts: list })
+});
+} catch(e) {}
 }
 
 // ═══════════════════════════════════════
@@ -576,16 +588,17 @@ renderEditList();
 document.getElementById(‘thoughtsList’).scrollTop = 9999;
 }
 
-function saveThoughts() {
+async function saveThoughts() {
 const inputs = document.querySelectorAll(’.thought-item-text’);
 editDraft = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
 if (!editDraft.length) editDraft = […DEFAULTS];
 thoughts = […editDraft];
-saveLocal(thoughts);
+const s = document.getElementById(‘saveStatus’);
+s.textContent = ‘saving…’;
+await saveLocal(thoughts);
 setThought(0);
 lastSwap = 0;
 cancelEdit();
-const s = document.getElementById(‘saveStatus’);
 s.textContent = ‘saved ✦’;
 setTimeout(() => s.textContent = ‘’, 2500);
 }

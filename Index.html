@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Hat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --tray: #F0EFED;
+    --border: #dbd7cf;
+    --border-light: #e8e5df;
+    --text-primary: #2b2825;
+    --text-muted: #9a9288;
+    --text-light: #b5afa5;
+    --hat-light: #52473e;
+  }
+  html, body {
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .widget {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 240px;
+    padding: 20px 18px 18px;
+    display: flex; flex-direction: column; align-items: center; gap: 13px;
+    position: relative;
+  }
+  .header { display:flex; align-items:center; gap:7px; width:100%; }
+  .sparkle { color: var(--text-light); font-size:11px; }
+  .title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px; color: var(--text-primary);
+    font-weight: 400; letter-spacing: 0.01em;
+  }
+  .divider { width:100%; height:1px; background:var(--border-light); margin:-3px 0; }
+
+/* ── SCENE ── */
+.scene {
+position: relative;
+width: 204px;
+height: 204px;
+flex-shrink: 0;
+}
+
+/* ── HAT ── */
+.hat-wrap {
+position: absolute;
+left: 50%; top: 50%;
+transform: translate(-50%, -46%);
+z-index: 2;
+}
+@keyframes hatFloat {
+0%,100% { transform: translate(-50%,-46%) translateY(0); }
+50%      { transform: translate(-50%,-46%) translateY(-4px); }
+}
+@keyframes hatTip {
+0%,80%,100% { transform: rotate(0deg); }
+88%  { transform: rotate(-6deg) translateX(-2px); }
+94%  { transform: rotate(2deg); }
+}
+.hat-wrap { animation: hatFloat 4s ease-in-out infinite; }
+.hat-inner { animation: hatTip 7s ease-in-out infinite; transform-origin: bottom center; }
+
+/* Stars */
+.hat-star {
+position: absolute; left:50%; top:32%;
+font-size:9px; pointer-events:none; opacity:0;
+animation: starPop var(–d) ease-out var(–delay) infinite;
+}
+@keyframes starPop {
+0%   { opacity:0; transform:translate(var(–sx),0) scale(0.4); }
+20%  { opacity:0.6; }
+100% { opacity:0; transform:translate(var(–ex),var(–ey)) scale(0.1) rotate(200deg); }
+}
+
+/* ── THOUGHT CLOUD ── */
+/* The cloud container is absolutely positioned and moved by JS around an ellipse */
+.cloud-wrap {
+position: absolute;
+pointer-events: none;
+z-index: 10;
+/* width/height set by JS */
+}
+
+.cloud-svg {
+position: absolute;
+top: 0; left: 0;
+width: 100%; height: 100%;
+overflow: visible;
+}
+
+.cloud-text-wrap {
+position: relative;
+z-index: 2;
+width: 100%;
+height: 100%;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 10px 14px 12px;
+}
+
+.cloud-text {
+font-family: ‘DM Serif Display’, serif;
+font-style: italic;
+font-size: 10.5px;
+color: var(–text-primary);
+text-align: center;
+line-height: 1.5;
+letter-spacing: 0.01em;
+transition: opacity 0.35s ease;
+max-width: 120px;
+}
+.cloud-text.fade { opacity: 0; }
+
+/* Bubble trail dots — also moved by JS */
+.trail-dot {
+position: absolute;
+background: var(–tray);
+border: 1px solid var(–border-light);
+border-radius: 50%;
+z-index: 9;
+pointer-events: none;
+}
+
+/* ── EDIT ── */
+.edit-toggle {
+display:flex; align-items:center; justify-content:center; gap:5px;
+background:transparent; border:1px solid var(–border-light);
+border-radius:7px; padding:7px 12px;
+color:var(–text-muted); font-family:‘DM Sans’,sans-serif;
+font-size:10px; font-weight:400; letter-spacing:0.06em;
+text-transform:uppercase; cursor:pointer; width:100%;
+transition:background 0.18s, border-color 0.18s;
+}
+.edit-toggle:hover { background:#f5f3ef; border-color:var(–border); }
+.edit-panel { width:100%; display:none; flex-direction:column; gap:8px; }
+.edit-panel.open { display:flex; }
+.edit-label { font-size:9px; color:var(–text-light); letter-spacing:0.1em; text-transform:uppercase; }
+.thoughts-list { display:flex; flex-direction:column; gap:5px; max-height:150px; overflow-y:auto; }
+.thoughts-list::-webkit-scrollbar { width:3px; }
+.thoughts-list::-webkit-scrollbar-thumb { background:var(–border); border-radius:3px; }
+.thought-item { display:flex; align-items:center; gap:6px; }
+.thought-item-text {
+flex:1; font-size:11px; color:var(–text-primary); font-weight:300;
+padding:5px 8px; background:var(–tray); border:1px solid var(–border-light);
+border-radius:6px; font-family:‘DM Sans’,sans-serif; outline:none;
+transition:border-color 0.18s;
+}
+.thought-item-text:focus { border-color:var(–border); }
+.del-btn {
+background:none; border:none; cursor:pointer; color:var(–text-light);
+font-size:15px; line-height:1; padding:2px 4px; border-radius:4px;
+transition:color 0.18s; flex-shrink:0;
+}
+.del-btn:hover { color:#a06060; }
+.add-row { display:flex; gap:6px; }
+.add-input {
+flex:1; font-size:11px; color:var(–text-primary); font-weight:300;
+padding:6px 9px; background:var(–surface); border:1px solid var(–border);
+border-radius:7px; font-family:‘DM Sans’,sans-serif; outline:none;
+transition:border-color 0.18s;
+}
+.add-input:focus { border-color:var(–text-muted); }
+.add-input::placeholder { color:var(–text-light); font-style:italic; }
+.add-btn {
+background:var(–text-primary); border:none; border-radius:7px;
+padding:6px 11px; color:white; font-size:17px; line-height:1;
+cursor:pointer; flex-shrink:0; transition:background 0.18s, transform 0.12s;
+}
+.add-btn:hover { background:var(–hat-light); }
+.add-btn:active { transform:scale(0.93); }
+.save-row { display:flex; gap:6px; }
+.save-btn {
+flex:1; background:var(–text-primary); border:none; border-radius:7px;
+padding:8px; color:white; font-family:‘DM Sans’,sans-serif;
+font-size:10px; font-weight:500; letter-spacing:0.07em;
+text-transform:uppercase; cursor:pointer; transition:background 0.18s;
+}
+.save-btn:hover { background:var(–hat-light); }
+.cancel-btn {
+flex:1; background:transparent; border:1px solid var(–border);
+border-radius:7px; padding:8px; color:var(–text-muted);
+font-family:‘DM Sans’,sans-serif; font-size:10px; font-weight:400;
+letter-spacing:0.07em; text-transform:uppercase; cursor:pointer;
+transition:background 0.18s;
+}
+.cancel-btn:hover { background:var(–tray); }
+.save-status { font-size:9px; color:var(–text-light); font-style:italic; text-align:center; min-height:11px; }
+</style>
+
+</head>
+<body>
+<div class="widget">
+
+  <div class="header">
+    <span class="sparkle">✦✦</span>
+    <span class="title">Top Hat</span>
+  </div>
+  <div class="divider"></div>
+
+  <div class="scene" id="scene">
+
+```
+<!-- Star particles -->
+<div class="hat-star" style="--d:3.2s;--delay:0s;  --sx:-5px;--ex:-20px;--ey:-44px;">✦</div>
+<div class="hat-star" style="--d:2.8s;--delay:0.9s;--sx: 4px;--ex: 18px;--ey:-50px;">✧</div>
+<div class="hat-star" style="--d:3.8s;--delay:1.8s;--sx:-2px;--ex:-8px; --ey:-38px;">·</div>
+<div class="hat-star" style="--d:2.5s;--delay:2.6s;--sx: 4px;--ex: 22px;--ey:-36px;">✦</div>
+
+<!-- HAT -->
+<div class="hat-wrap">
+  <div class="hat-inner">
+    <svg viewBox="0 0 100 118" width="90" height="106" xmlns="http://www.w3.org/2000/svg"
+         style="filter:drop-shadow(0 4px 10px rgba(43,40,37,0.18))">
+      <defs>
+        <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stop-color="#1a1714"/>
+          <stop offset="38%"  stop-color="#2b2825"/>
+          <stop offset="68%"  stop-color="#38332e"/>
+          <stop offset="100%" stop-color="#1a1714"/>
+        </linearGradient>
+        <linearGradient id="bg2" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#2b2825"/>
+          <stop offset="100%" stop-color="#111010"/>
+        </linearGradient>
+        <radialGradient id="tg" cx="38%" cy="32%" r="62%">
+          <stop offset="0%"   stop-color="#3c3730"/>
+          <stop offset="100%" stop-color="#1a1714"/>
+        </radialGradient>
+      </defs>
+      <ellipse cx="50" cy="114" rx="40" ry="6"   fill="#0a0908" opacity="0.18"/>
+      <ellipse cx="50" cy="94"  rx="44" ry="8.5" fill="url(#bg2)"/>
+      <ellipse cx="50" cy="91"  rx="44" ry="8.5" fill="url(#bg2)"/>
+      <ellipse cx="50" cy="91"  rx="44" ry="8.5" fill="none" stroke="#3a3530" stroke-width="1.2"/>
+      <ellipse cx="40" cy="90"  rx="16" ry="3"   fill="#3a3530" opacity="0.45"/>
+      <path d="M14 91 L18 16 L82 16 L86 91Z" fill="url(#hg)"/>
+      <path d="M14 91 L18 16 L24 16 L20 91Z" fill="#3a3530" opacity="0.45"/>
+      <path d="M76 16 L82 16 L86 91 L80 91Z" fill="#0e0c0a" opacity="0.5"/>
+      <ellipse cx="50" cy="16"  rx="32" ry="7.5" fill="url(#tg)"/>
+      <ellipse cx="43" cy="15"  rx="13" ry="3"   fill="#484038" opacity="0.5"/>
+      <rect x="14" y="75" width="72" height="10" rx="1" fill="#c9b99a"/>
+      <rect x="14" y="75" width="72" height="4"  rx="1" fill="#d4c4a8"/>
+      <rect x="45" y="74" width="10" height="12" rx="2"   fill="#b8a888"/>
+      <rect x="47" y="76" width="6"  height="8"  rx="1.5" fill="#c9b99a"/>
+      <rect x="49" y="78" width="2"  height="4"  rx="1"   fill="#b0a080"/>
+      <line x1="34" y1="16" x2="30" y2="75" stroke="#3a3530" stroke-width="0.7" opacity="0.45"/>
+      <line x1="50" y1="16" x2="50" y2="75" stroke="#3a3530" stroke-width="0.7" opacity="0.35"/>
+      <line x1="66" y1="16" x2="70" y2="75" stroke="#3a3530" stroke-width="0.7" opacity="0.45"/>
+      <path d="M24 22 L22 76" stroke="#484038" stroke-width="2" opacity="0.38" stroke-linecap="round"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Cloud + trail injected by JS -->
+<div class="cloud-wrap" id="cloudWrap">
+  <svg class="cloud-svg" id="cloudSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="cloud-text-wrap">
+    <div class="cloud-text" id="cloudText"></div>
+  </div>
+</div>
+<div class="trail-dot" id="dot0"></div>
+<div class="trail-dot" id="dot1"></div>
+<div class="trail-dot" id="dot2"></div>
+```
+
+  </div>
+
+  <!-- EDIT -->
+
+<button class="edit-toggle" onclick="toggleEdit()" id="editToggle">✦ edit thoughts</button>
+
+  <div class="edit-panel" id="editPanel">
+    <div class="edit-label">your thoughts</div>
+    <div class="thoughts-list" id="thoughtsList"></div>
+    <div class="add-row">
+      <input class="add-input" id="addInput" placeholder="add a thought…" maxlength="55"
+             onkeydown="if(event.key==='Enter')addThought()"/>
+      <button class="add-btn" onclick="addThought()">+</button>
+    </div>
+    <div class="save-row">
+      <button class="save-btn" onclick="saveThoughts()">save ✦</button>
+      <button class="cancel-btn" onclick="cancelEdit()">cancel</button>
+    </div>
+    <div class="save-status" id="saveStatus"></div>
+  </div>
+
+</div>
+<script>
+// ═══════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════
+const STORAGE_KEY    = 'tophat_v4';
+const SWAP_INTERVAL  = 15000;  // new thought every 15s
+const ORBIT_PERIOD   = 22000;  // full orbit in ms
+const CLOUD_W        = 148;
+const CLOUD_H        = 80;
+
+// Scene is 204×204. Hat visual center roughly at:
+const SCX = 102, SCY = 108;   // orbit center (scene coords)
+const ORX  = 82,  ORY = 52;   // orbit radii (wider than tall)
+
+const DEFAULTS = [
+“drink more water 💧”,
+“you’re doing great ✦”,
+“take a deep breath 🌿”,
+“one thing at a time”,
+“check in with yourself”,
+“rest is productive too”,
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let thoughts   = [];
+let thoughtIdx = 0;
+let angle      = -Math.PI / 2;  // start top-center
+let rafId      = null;
+let lastTs     = null;
+let lastSwap   = 0;
+let isEditing  = false;
+let editDraft  = [];
+
+// ═══════════════════════════════════════
+// CLOUD SVG
+// ═══════════════════════════════════════
+function drawCloudSvg() {
+const svg = document.getElementById(‘cloudSvg’);
+const w = CLOUD_W, h = CLOUD_H;
+svg.setAttribute(‘viewBox’, `0 0 ${w} ${h}`);
+svg.setAttribute(‘width’, w);
+svg.setAttribute(‘height’, h);
+
+// Define bumps that make a natural cloud blob
+const cx = w * 0.5, cy = h * 0.56;
+const bumps = [
+{ x: cx,           y: cy,          r: h * 0.36 },
+{ x: cx - h*0.36,  y: cy + h*0.06, r: h * 0.26 },
+{ x: cx + h*0.36,  y: cy + h*0.06, r: h * 0.26 },
+{ x: cx - h*0.18,  y: cy - h*0.26, r: h * 0.24 },
+{ x: cx + h*0.18,  y: cy - h*0.26, r: h * 0.24 },
+{ x: cx - h*0.52,  y: cy + h*0.14, r: h * 0.18 },
+{ x: cx + h*0.52,  y: cy + h*0.14, r: h * 0.18 },
+];
+
+// Draw fill layer then stroke layer so borders don’t show between bumps
+svg.innerHTML =
+bumps.map(b => `<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="${b.r.toFixed(1)}" fill="#F0EFED" stroke="none"/>`).join(’’) +
+// outer stroke ring — only on outermost edge (render all at once, stroke on top)
+bumps.map(b => `<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="${b.r.toFixed(1)}" fill="none" stroke="#dbd7cf" stroke-width="1.1"/>`).join(’’) +
+// inner fill-over to hide internal strokes
+bumps.map(b => `<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="${(b.r - 0.7).toFixed(1)}" fill="#F0EFED" stroke="none"/>`).join(’’);
+
+const wrap = document.getElementById(‘cloudWrap’);
+wrap.style.width  = w + ‘px’;
+wrap.style.height = h + ‘px’;
+}
+
+// ═══════════════════════════════════════
+// ORBIT ANIMATION
+// ═══════════════════════════════════════
+function frame(ts) {
+if (lastTs === null) lastTs = ts;
+const dt = Math.min(ts - lastTs, 60);
+lastTs = ts;
+
+if (!isEditing) {
+// Advance orbit angle
+angle += (Math.PI * 2 / ORBIT_PERIOD) * dt;
+
+```
+// Check if we should swap thought
+lastSwap += dt;
+if (lastSwap >= SWAP_INTERVAL) {
+  lastSwap = 0;
+  swapThought();
+}
+
+positionCloud();
+```
+
+}
+
+rafId = requestAnimationFrame(frame);
+}
+
+function positionCloud() {
+const cx = SCX + ORX * Math.cos(angle);
+const cy = SCY + ORY * Math.sin(angle);
+
+// Place cloud centered on orbit point
+const wrap = document.getElementById(‘cloudWrap’);
+wrap.style.left = (cx - CLOUD_W / 2) + ‘px’;
+wrap.style.top  = (cy - CLOUD_H / 2) + ‘px’;
+
+// Depth effect: sin(angle) from -1 (back) to +1 (front)
+const sinA  = Math.sin(angle);
+const depth = (sinA + 1) / 2;
+const scale   = 0.78 + depth * 0.22;
+const opacity = 0.55 + depth * 0.45;
+wrap.style.transform = `scale(${scale.toFixed(3)})`;
+wrap.style.opacity   = opacity.toFixed(3);
+wrap.style.zIndex    = sinA < 0 ? 1 : 10;
+
+// Trail dots: interpolate between cloud center and hat top
+// Hat top roughly at SCX, SCY - 54 (top of hat)
+const hatTopX = SCX, hatTopY = SCY - 54;
+const steps = [0.72, 0.84, 0.93]; // fraction between cloud → hat
+const dotSizes = [10, 7, 5];
+steps.forEach((t, i) => {
+const dx = cx + (hatTopX - cx) * t;
+const dy = cy + (hatTopY - cy) * t;
+const dot = document.getElementById(‘dot’ + i);
+dot.style.width  = dotSizes[i] + ‘px’;
+dot.style.height = dotSizes[i] + ‘px’;
+dot.style.left   = (dx - dotSizes[i]/2) + ‘px’;
+dot.style.top    = (dy - dotSizes[i]/2) + ‘px’;
+dot.style.opacity = opacity.toFixed(3);
+dot.style.zIndex  = sinA < 0 ? 1 : 10;
+dot.style.transform = `scale(${scale.toFixed(3)})`;
+});
+}
+
+// ═══════════════════════════════════════
+// THOUGHT SWAP
+// ═══════════════════════════════════════
+function swapThought() {
+if (!thoughts.length) return;
+thoughtIdx = (thoughtIdx + 1) % thoughts.length;
+const textEl = document.getElementById(‘cloudText’);
+textEl.classList.add(‘fade’);
+setTimeout(() => {
+textEl.textContent = thoughts[thoughtIdx];
+textEl.classList.remove(‘fade’);
+}, 380);
+}
+
+function setThought(idx) {
+thoughtIdx = idx % thoughts.length;
+document.getElementById(‘cloudText’).textContent = thoughts[thoughtIdx];
+}
+
+// ═══════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════
+function loadThoughts() {
+try {
+const raw = localStorage.getItem(STORAGE_KEY);
+thoughts = raw ? JSON.parse(raw) : […DEFAULTS];
+} catch(_) { thoughts = […DEFAULTS]; }
+if (!thoughts.length) thoughts = […DEFAULTS];
+setThought(0);
+lastSwap = 0;
+if (rafId) cancelAnimationFrame(rafId);
+lastTs = null;
+rafId = requestAnimationFrame(frame);
+}
+
+function saveLocal(list) {
+try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch(_) {}
+}
+
+// ═══════════════════════════════════════
+// EDIT
+// ═══════════════════════════════════════
+function toggleEdit() { isEditing ? cancelEdit() : openEdit(); }
+
+function openEdit() {
+isEditing = true;
+editDraft = […thoughts];
+document.getElementById(‘editPanel’).classList.add(‘open’);
+document.getElementById(‘editToggle’).textContent = ‘✦ close editor’;
+renderEditList();
+}
+
+function cancelEdit() {
+isEditing = false;
+document.getElementById(‘editPanel’).classList.remove(‘open’);
+document.getElementById(‘editToggle’).textContent = ‘✦ edit thoughts’;
+document.getElementById(‘saveStatus’).textContent = ‘’;
+}
+
+function renderEditList() {
+const list = document.getElementById(‘thoughtsList’);
+list.innerHTML = ‘’;
+editDraft.forEach((t, i) => {
+const row = document.createElement(‘div’);
+row.className = ‘thought-item’;
+const inp = document.createElement(‘input’);
+inp.className = ‘thought-item-text’;
+inp.value = t; inp.maxLength = 55;
+inp.oninput = () => { editDraft[i] = inp.value; };
+const del = document.createElement(‘button’);
+del.className = ‘del-btn’; del.textContent = ‘×’;
+del.onclick = () => { editDraft.splice(i, 1); renderEditList(); };
+row.appendChild(inp); row.appendChild(del);
+list.appendChild(row);
+});
+}
+
+function addThought() {
+const inp = document.getElementById(‘addInput’);
+const val = inp.value.trim();
+if (!val) return;
+editDraft.push(val);
+inp.value = ‘’;
+renderEditList();
+document.getElementById(‘thoughtsList’).scrollTop = 9999;
+}
+
+function saveThoughts() {
+const inputs = document.querySelectorAll(’.thought-item-text’);
+editDraft = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
+if (!editDraft.length) editDraft = […DEFAULTS];
+thoughts = […editDraft];
+saveLocal(thoughts);
+setThought(0);
+lastSwap = 0;
+cancelEdit();
+const s = document.getElementById(‘saveStatus’);
+s.textContent = ‘saved ✦’;
+setTimeout(() => s.textContent = ‘’, 2500);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+window.addEventListener(‘load’, () => {
+drawCloudSvg();
+loadThoughts();
+});
+</script>
+
+</body>
+</html>

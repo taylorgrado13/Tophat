@@ -352,15 +352,6 @@ const CLOUD_H        = 80;
 const SCX = 102, SCY = 108;   // orbit center (scene coords)
 const ORX  = 82,  ORY = 52;   // orbit radii (wider than tall)
 
-const DEFAULTS = [
-“drink more water 💧”,
-“you’re doing great ✦”,
-“take a deep breath 🌿”,
-“one thing at a time”,
-“check in with yourself”,
-“rest is productive too”,
-];
-
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
@@ -505,14 +496,11 @@ const r = await fetch(BIN_URL + ‘/latest’, {
 headers: { ‘X-Master-Key’: API_KEY }
 });
 const j = await r.json();
-if (j.record && Array.isArray(j.record.thoughts) && j.record.thoughts.length) {
 thoughts = j.record.thoughts;
-} else {
-thoughts = […DEFAULTS];
-}
 } catch(e) {
-thoughts = […DEFAULTS];
+thoughts = [];
 }
+if (!thoughts || !thoughts.length) return;
 setThought(0);
 lastSwap = 0;
 if (rafId) cancelAnimationFrame(rafId);
@@ -594,7 +582,7 @@ document.getElementById(‘thoughtsList’).scrollTop = 9999;
 async function saveThoughts() {
 const inputs = document.querySelectorAll(’.thought-item-text’);
 editDraft = Array.from(inputs).map(i => i.value.trim()).filter(Boolean);
-if (!editDraft.length) editDraft = […DEFAULTS];
+if (!editDraft.length) return;
 thoughts = […editDraft];
 const s = document.getElementById(‘saveStatus’);
 s.textContent = ‘saving…’;

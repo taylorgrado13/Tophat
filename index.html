@@ -320,8 +320,8 @@ animation: bulbGlow 1.8s ease-in-out infinite;
 
   <!-- EDIT -->
 
-<button class="edit-toggle" onclick="toggleEdit()" id="editToggle">✦ edit thoughts</button>
-
+  <div id="dbStatus" style="font-size:9px;color:#a06060;font-style:italic;text-align:center;min-height:11px;width:100%;"></div>
+  <button class="edit-toggle" onclick="toggleEdit()" id="editToggle">✦ edit thoughts</button>
   <div class="edit-panel" id="editPanel">
     <div class="edit-label">your thoughts</div>
     <div class="thoughts-list" id="thoughtsList"></div>
@@ -491,16 +491,24 @@ const API_KEY = ‘$2a$10$YJRS5A0ezItimuE0YbEK/.Ca1UUhStRrJax.4zYQos3pmVKjwkPWG�
 const BIN_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 async function loadThoughts() {
+const statusEl = document.getElementById(‘dbStatus’);
+statusEl.textContent = ‘loading…’;
 try {
 const r = await fetch(BIN_URL + ‘/latest’, {
 headers: { ‘X-Master-Key’: API_KEY }
 });
 const j = await r.json();
+if (j.record && Array.isArray(j.record.thoughts) && j.record.thoughts.length) {
 thoughts = j.record.thoughts;
-} catch(e) {
-thoughts = [];
+statusEl.textContent = ‘’;
+} else {
+statusEl.textContent = ‘no thoughts found in db’;
+thoughts = [‘add your thoughts via edit ✦’];
 }
-if (!thoughts || !thoughts.length) return;
+} catch(e) {
+statusEl.textContent = ’db error: ’ + e.message;
+thoughts = [‘could not reach db’];
+}
 setThought(0);
 lastSwap = 0;
 if (rafId) cancelAnimationFrame(rafId);
